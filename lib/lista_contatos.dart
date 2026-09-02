@@ -1,4 +1,6 @@
+import 'package:appcontato/databaseHelper.dart';
 import 'package:flutter/material.dart';
+import 'package:sqflite/sqflite.dart';
 
 class ListaContatos extends StatefulWidget {
   const ListaContatos({super.key});
@@ -8,44 +10,20 @@ class ListaContatos extends StatefulWidget {
 }
 
 class _ListaContatosState extends State<ListaContatos> {
-  final List<Map<String, dynamic>> contatos = [
-    {
-      'iniciais': 'AS',
-      'nome': 'Ana Souza',
-      'telefone': '(11) 98765-4321',
-      'favoritos': true,
-    },
-    {
-      'iniciais': 'BL',
-      'nome': 'Bruno Lima',
-      'telefone': '(14) 99123-4567',
-      'favoritos': false,
-    },
-    {
-      'iniciais': 'CM',
-      'nome': 'Carla Mendes',
-      'telefone': '(21) 97654-3210',
-      'favoritos': true,
-    },
-    {
-      'iniciais': 'DA',
-      'nome': 'Diego Alves',
-      'telefone': '(19) 98888-1234',
-      'favoritos': false,
-    },
-    {
-      'iniciais': 'ET',
-      'nome': 'Elisa Torres',
-      'telefone': '(17) 99999-5678',
-      'favoritos': false,
-    },
-    {
-      'iniciais': 'GM',
-      'nome': 'Gustavo Messias',
-      'telefone': '(14) 99903-7062',
-      'favoritos': true,
-    },
-  ];
+  List<Map<String, dynamic>> contatos = [];
+
+  @override
+  void initState() {
+    super.initState();
+    carregarContatos();
+  }
+
+  void carregarContatos() async {
+    final dados = await DatabaseHelper.buscarContatos();
+    setState(() {
+      contatos = dados;
+    });
+  }
 
   void favoritar(int index) {
     setState(() {
@@ -90,19 +68,17 @@ class _ListaContatosState extends State<ListaContatos> {
               child: Text("Cancelar"),
             ),
             TextButton(
-              onPressed: () {
+              onPressed: () async {
                 if (telefoneController.text.isNotEmpty &&
                     nomeController.text.isNotEmpty &&
                     siglaController.text.isNotEmpty) {
-                  print("Click");
-                  setState(() {
-                    contatos.add({
-                      'iniciais': siglaController.text,
-                      'nome': nomeController.text,
-                      'telefone': telefoneController.text,
-                      'favoritos': false,
-                    });
-                  });
+                  await DatabaseHelper.inserirContatos(
+                    siglaController.text,
+                    nomeController.text,
+                    telefoneController.text,
+                  );
+                  carregarContatos();
+
                   Navigator.pop(context);
                 }
               },
@@ -130,7 +106,7 @@ class _ListaContatosState extends State<ListaContatos> {
         itemCount: contatos.length,
         itemBuilder: (context, index) {
           final contato = contatos[index];
-          final bool favorito = contato['favoritos'];
+          final bool favorito = contato['favoritos'] == 0;
 
           return GestureDetector(
             onLongPress: () => excluirContato(index),
